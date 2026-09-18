@@ -1,5 +1,8 @@
 # DNSHE Manager
 
+[![Version](https://img.shields.io/badge/version-v1.1-blue.svg)]()
+[![License](https://img.shields.io/badge/license-MIT-green.svg)]()
+
 一个轻量自托管的 DNSHE 免费域名管理 WebUI，基于 FastAPI + Vue3 + SQLite 构建，Docker 一键部署。
 
 ## 📸 预览
@@ -75,6 +78,18 @@ docker-compose up -d --build
 - 首次使用请先在 DNSHE 客户区创建 API 密钥，在系统设置页填入即可
 
 如果觉得好用，麻烦点个 Star ⭐ 支持一下~
+
+## 📅 更新日志
+### v1.1 (2026-09-18)
+- ✨ 新增登录鉴权模块：独立登录页，所有接口需登录访问
+- 🔒 密码bcrypt哈希存储，数据库不存明文
+- 🛡️ 安全加固：连续5次登录失败封IP10分钟，Token7天自动过期
+- 👤 支持修改登录用户名、修改登录密码、退出登录
+- 🐛 修复登录页刷新报错、修改密码弹窗全局可用等多个问题
+
+### v1.0 (2026-09-18)
+- 首个正式版本
+- 完整域名管理、DNS解析、自动续期、多渠道通知功能
 
 ## 📄 License
 MIT

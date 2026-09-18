@@ -22,3 +22,9 @@ class OperationLog(Base):
     detail = Column(String)
     success = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.now)
+
+class AdminUser(Base):
+    __tablename__ = "admin_user"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True)
+    password_hash = Column(String)

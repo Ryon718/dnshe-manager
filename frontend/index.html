@@ -41,6 +41,25 @@
     .main { flex:1; padding:36px; }
     .page-title { font-size:28px; font-weight:600; margin-bottom:28px; color:#0f172a; }
 
+    /* 登录页 */
+    .login-wrap {
+      min-height:100vh; display:flex; align-items:center; justify-content:center;
+      background:linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+    }
+    .login-card {
+      background:#fff; padding:48px; border-radius:16px; width:420px;
+      box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);
+    }
+    .login-card h2 { text-align:center; margin-bottom:32px; color:#0f172a; }
+    .login-card input {
+      width:100%; padding:12px; border:1px solid #e2e8f0; border-radius:8px;
+      margin-bottom:16px; font-size:15px;
+    }
+    .login-card button {
+      width:100%; padding:12px; background:#2563eb; color:#fff; border:none;
+      border-radius:8px; font-size:16px; cursor:pointer;
+    }
+
     /* 卡片 */
     .card {
       background:#fff; border-radius:10px; padding:28px;
@@ -94,7 +113,21 @@
 </head>
 <body>
 <div id="app">
-  <div class="layout">
+  <!-- 登录页 -->
+  <div v-if="!isLogin" class="login-wrap">
+    <div class="login-card">
+      <h2>DNSHE Manager</h2>
+      <input v-model="loginForm.username" placeholder="用户名" @keyup.enter="doLogin">
+      <input v-model="loginForm.password" type="password" placeholder="密码" @keyup.enter="doLogin">
+      <button @click="doLogin">登 录</button>
+      <div style="text-align:center; margin-top:24px; color:#94a3b8; font-size:13px; line-height:1.6">
+        首次使用默认账号：admin / admin123<br>
+        登录后请立即在「设置-安全设置」修改密码
+      </div>
+    </div>
+  </div>
+
+  <div v-else class="layout">
     <!-- 侧边栏 -->
     <div class="sidebar">
       <div class="logo">DNSHE Manager</div>
@@ -566,11 +599,6 @@
               <div style="color:#15803d; font-size:14px; margin-top:4px">当前API密钥工作正常，已连接到DNSHE服务</div>
             </div>
           </div>
-          <div class="form-item" style="margin-bottom:28px">
-            <label style="display:flex; align-items:center; gap:12px; font-size:16px">
-              <input type="checkbox" v-model="config.auto_renew"> 自动续期（每日凌晨3点检查）
-            </label>
-          </div>
           <button class="btn" style="background:#f1f5f9" @click="configValid=false">重新编辑配置</button>
           <button class="btn btn-danger" @click="openDeleteConfirm()" style="margin-left:12px">删除配置</button>
         </div>
@@ -586,6 +614,29 @@
             <input type="password" v-model="config.api_secret" placeholder="API Secret" style="width:100%">
           </div>
           <button class="btn btn-primary" @click="saveConfig">保存并验证</button>
+        </div>
+
+        <!-- 安全设置 -->
+        <div class="card">
+          <h4>安全设置</h4>
+          <div style="display:flex; flex-direction:column; gap:20px">
+            <div style="display:flex; align-items:center; gap:16px; padding-bottom:20px; border-bottom:1px solid #f1f5f9">
+              <div style="width:120px; color:#334155">修改用户名</div>
+              <input v-model="usernameForm.new_username" placeholder="输入新用户名" style="flex:1; padding:10px; border:1px solid #e2e8f0; border-radius:8px">
+              <input v-model="usernameForm.password" type="password" placeholder="当前密码验证" style="width:200px; padding:10px; border:1px solid #e2e8f0; border-radius:8px">
+              <button class="btn btn-primary" @click="doChangeUsername">保存</button>
+            </div>
+            <div style="display:flex; align-items:center; gap:16px; padding-bottom:20px; border-bottom:1px solid #f1f5f9">
+              <div style="width:120px; color:#334155">登录密码</div>
+              <div style="flex:1; color:#64748b">定期修改密码可提升账号安全性</div>
+              <button class="btn" @click="changePwdDialog=true">修改密码</button>
+            </div>
+            <div style="display:flex; align-items:center; gap:16px">
+              <div style="width:120px; color:#334155">退出登录</div>
+              <div style="flex:1; color:#64748b">退出当前账号，登录态将失效</div>
+              <button class="btn" style="background:#fef2f2; color:#dc2626" @click="doLogout">退出登录</button>
+            </div>
+          </div>
         </div>
 
         <!-- 删除确认弹窗 -->
@@ -605,6 +656,24 @@
           </template>
         </el-dialog>
       </div>
+
+      <!-- 全局修改密码弹窗（任意页面可用） -->
+      <el-dialog v-model="changePwdDialog" title="修改登录密码" width="500px">
+        <div class="form-item" style="margin-bottom:16px">
+          <label style="display:block; margin-bottom:6px; color:#334155">原密码</label>
+          <input type="password" v-model="pwdForm.old_password" placeholder="输入原密码" style="width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:8px">
+        </div>
+        <div class="form-item" style="margin-bottom:16px">
+          <label style="display:block; margin-bottom:6px; color:#334155">新密码</label>
+          <input type="password" v-model="pwdForm.new_password" placeholder="输入新密码" style="width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:8px">
+        </div>
+        <template #footer>
+          <button class="btn" style="background:#f1f5f9" @click="changePwdDialog=false">取消</button>
+          <button class="btn btn-primary" :disabled="changePwdLoading" @click="doChangePwd">
+            {{ changePwdLoading ? "处理中..." : "确认修改" }}
+          </button>
+        </template>
+      </el-dialog>
     </div>
   </div>
 </div>
@@ -615,6 +684,77 @@ const { ElMessage } = ElementPlus
 
 const app = createApp({
   setup(){
+    const isLogin = ref(localStorage.getItem("token") ? true : false)
+    const loginForm = reactive({username:"", password:""})
+    const changePwdDialog = ref(false)
+    const pwdForm = reactive({old_password:"", new_password:""})
+    const changePwdLoading = ref(false)
+    const usernameForm = reactive({new_username:"", password:""})
+
+    // axios自动带token，401自动跳登录
+    axios.interceptors.request.use(config => {
+      const token = localStorage.getItem("token")
+      if(token) config.headers.Authorization = "Bearer " + token
+      return config
+    })
+    axios.interceptors.response.use(res => res, err => {
+      if(err.response && err.response.status === 401){
+        localStorage.removeItem("token")
+        isLogin.value = false
+        // 登录页不弹错误提示
+        if(loginForm.username || loginForm.password){
+          ElMessage.error("登录已过期，请重新登录")
+        }
+      }
+      return Promise.reject(err)
+    })
+
+    async function doLogin(){
+      const res = await axios.post("/api/auth/login", loginForm)
+      if(res.data.success){
+        localStorage.setItem("token", res.data.token)
+        isLogin.value = true
+        ElMessage.success("登录成功")
+        loadDomains()
+      }else{
+        ElMessage.error(res.data.message)
+      }
+    }
+
+    function doLogout(){
+      localStorage.removeItem("token")
+      isLogin.value = false
+    }
+
+    async function doChangeUsername(){
+      const res = await axios.post("/api/auth/change_username", usernameForm)
+      if(res.data.success){
+        ElMessage.success("用户名修改成功")
+        usernameForm.new_username = ""
+        usernameForm.password = ""
+      }else{
+        ElMessage.error(res.data.message)
+      }
+    }
+
+    async function doChangePwd(){
+      changePwdLoading.value = true
+      try{
+        const res = await axios.post("/api/auth/change_pwd", pwdForm)
+        if(res.data.success){
+          ElMessage.success("密码修改成功，请重新登录")
+          doLogout()
+          changePwdDialog.value = false
+        }else{
+          ElMessage.error(res.data.message)
+        }
+      }catch(e){
+        ElMessage.error("请求超时，请重试")
+      }finally{
+        changePwdLoading.value = false
+      }
+    }
+
     const page = ref("dashboard")
     const domainList = ref([])
     const recordList = ref([])
@@ -1014,14 +1154,21 @@ const app = createApp({
       }
     }
 
-    onMounted(()=>{ loadDomains() })
+    onMounted(()=>{
+      // 只有已登录才加载数据，登录页不发任何请求
+      if(localStorage.getItem("token")){
+        loadDomains()
+      }
+    })
 
     return {
       page, handleMenuSelect, domainList, stat, quota, statusClass, statusText, statusStyle,
       newDomain, availableRoots, createDomain, renew, delDomain,
       selectedDomainId, selectedDomainFull, currentDomain, addDialog, nsDialog, nsList, nsInputList, recordList, addRec, addRecord, onTypeChange,
       openEdit, editDialog, editRec, saveEdit, delRec, formatHost, onDomainChange, goBackDomain, saveNs,
-      config, configValid, showDeleteConfirm, deleteCaptcha, deleteInput, saveConfig, openDeleteConfirm, doDeleteConfig, renewList, loadRenewList, toggleRenew, testRenewNow, logList, loadLogList, notifyConfig, loadNotifyConfig, saveNotify, testNotify, loadConfig, loadDomains, goRecord
+      config, configValid, showDeleteConfirm, deleteCaptcha, deleteInput, saveConfig, openDeleteConfirm, doDeleteConfig, renewList, loadRenewList, toggleRenew, testRenewNow, logList, loadLogList, notifyConfig, loadNotifyConfig, saveNotify, testNotify, loadConfig, loadDomains, goRecord,
+      isLogin, loginForm, changePwdDialog, pwdForm, doLogin, doLogout, doChangePwd,
+      usernameForm, doChangeUsername
     }
   }
 })

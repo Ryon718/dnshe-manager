@@ -5,3 +5,4 @@ sqlalchemy
 apscheduler
 python-multipart
 pydantic
+bcrypt
