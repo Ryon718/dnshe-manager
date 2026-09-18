@@ -1,7 +1,0 @@
-fastapi
-uvicorn[standard]
-requests
-sqlalchemy
-apscheduler
-python-multipart
-pydantic
