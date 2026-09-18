@@ -2,6 +2,19 @@
 
 一个轻量自托管的 DNSHE 免费域名管理 WebUI，基于 FastAPI + Vue3 + SQLite 构建，Docker 一键部署。
 
+## 📸 预览
+| 仪表盘 | 域名管理 |
+|--------|----------|
+| ![仪表盘](screenshots/dashboard.png) | ![域名管理](screenshots/domain.png) |
+
+| DNS解析管理 | 自动续期 |
+|-------------|----------|
+| ![DNS解析](screenshots/record.png) | ![自动续期](screenshots/renew.png) |
+
+| 通知设置 | 操作日志 |
+|----------|----------|
+| ![通知设置](screenshots/notify.png) | ![操作日志](screenshots/log.png) |
+
 ## ✨ 功能特性
 
 - 📊 **仪表盘**：域名总数统计、配额使用进度条、彩色状态标签
