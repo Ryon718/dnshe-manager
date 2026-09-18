@@ -25,44 +25,35 @@
 - 📋 **操作日志**：所有手动/自动操作完整记录，成功失败一目了然
 - 🔒 **安全**：API Key 仅后端存储，前端不暴露；密码密文输入；删除配置二次验证码确认
 
-## 🚀 部署方法
+## 🚀 一键部署（推荐）
 
-### 准备工作
-1. 先在 [DNSHE 客户区](https://my.dnshe.com/) 创建 API 密钥（免费域名管理 → API管理 → 创建）
+只要一个 `docker-compose.yml`，不用clone代码：
 
-### Docker Compose 部署
-
-1. 新建 `docker-compose.yml`：
 ```yaml
 services:
   dnshe-manager:
-    build: .
+    image: ghcr.io/ryon718/dnshe-manager:latest
     container_name: dnshe-manager
     ports:
       - "8100:8080"
     volumes:
       - ./data:/app/data
+    environment:
+      - TZ=Asia/Shanghai
     restart: unless-stopped
 ```
 
-2. 新建 `Dockerfile`：
-```dockerfile
-FROM python:3.11-slim
-WORKDIR /app
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY backend/ ./backend/
-COPY frontend/ ./frontend/
-EXPOSE 8080
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8080"]
+然后执行：
+```bash
+docker-compose up -d
 ```
+打开 `http://你的IP:8100` 就完事。
 
-3. 启动：
+### 本地源码构建部署
+如果你想自己改代码，clone仓库后执行：
 ```bash
 docker-compose up -d --build
 ```
-
-4. 打开浏览器访问 `http://你的IP:8100`，在设置页填入你的 API Key/Secret 即可使用。
 
 ## 📝 说明
 - 本项目为第三方非官方工具，与 DNSHE 官方无关
