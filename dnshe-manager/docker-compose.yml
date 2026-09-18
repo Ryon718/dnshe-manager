@@ -1,0 +1,12 @@
+version: "3.8"
+services:
+  dnshe-manager:
+    build: .
+    container_name: dnshe-manager
+    ports:
+      - "8100:8080"
+    volumes:
+      - /volume1/docker/dnshe-manager/data:/app/data
+    environment:
+      - TZ=Asia/Shanghai
+    restart: unless-stopped
