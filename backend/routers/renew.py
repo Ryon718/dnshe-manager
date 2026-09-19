@@ -2,24 +2,27 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from backend.database import get_db
-from backend.models import AppConfig, DomainRenew
+from backend.models import DnsheAccount, DomainRenew
 from backend.dnshe_api import DnsheClient
 import datetime
 
 router = APIRouter()
 
+def get_current_account(db: Session):
+    return db.query(DnsheAccount).filter(DnsheAccount.is_active == 1).first()
+
 def get_client(db: Session):
-    key_row = db.query(AppConfig).filter(AppConfig.key == "dnshe_api_key").first()
-    secret_row = db.query(AppConfig).filter(AppConfig.key == "dnshe_api_secret").first()
-    if not key_row or not secret_row or not key_row.value or not secret_row.value:
+    account = get_current_account(db)
+    if not account:
         return None
-    return DnsheClient(key_row.value, secret_row.value)
+    return DnsheClient(account.api_key, account.api_secret)
 
 @router.get("/list")
 def renew_list(db: Session = Depends(get_db)):
-    cli = get_client(db)
-    if not cli:
+    acc = get_current_account(db)
+    if not acc:
         return {"success": False, "data": []}
+    cli = DnsheClient(acc.api_key, acc.api_secret)
     res = cli.list_subdomains()
     domains = res.get("subdomains", [])
     out = []
@@ -38,8 +41,11 @@ def renew_list(db: Session = Depends(get_db)):
                     in_renew_window = True
             except:
                 pass
-        # 查续期开关
-        cfg = db.query(DomainRenew).filter(DomainRenew.subdomain_id == sub_id).first()
+        # 查当前账号下的续期开关
+        cfg = db.query(DomainRenew).filter(
+            DomainRenew.subdomain_id == sub_id,
+            DomainRenew.account_id == acc.id
+        ).first()
         auto_renew = cfg.auto_renew if cfg else False
         last_renewed = cfg.last_renewed_at.strftime("%Y-%m-%d %H:%M:%S") if cfg and cfg.last_renewed_at else None
         out.append({
@@ -60,9 +66,13 @@ class ToggleRenewReq(BaseModel):
 
 @router.post("/toggle")
 def toggle_renew(req: ToggleRenewReq, db: Session = Depends(get_db)):
-    cfg = db.query(DomainRenew).filter(DomainRenew.subdomain_id == req.subdomain_id).first()
+    acc = get_current_account(db)
+    cfg = db.query(DomainRenew).filter(
+        DomainRenew.subdomain_id == req.subdomain_id,
+        DomainRenew.account_id == acc.id
+    ).first()
     if not cfg:
-        cfg = DomainRenew(subdomain_id=req.subdomain_id, auto_renew=req.auto_renew)
+        cfg = DomainRenew(account_id=acc.id, subdomain_id=req.subdomain_id, auto_renew=req.auto_renew)
         db.add(cfg)
     else:
         cfg.auto_renew = req.auto_renew
@@ -80,7 +90,11 @@ def test_renew_now(req: TestRenewReq, db: Session = Depends(get_db)):
         return {"success": False, "message": "未配置API"}
     r = cli.renew_subdomain(req.subdomain_id)
     if r.get("success"):
-        cfg = db.query(DomainRenew).filter(DomainRenew.subdomain_id == req.subdomain_id).first()
+        acc = get_current_account(db)
+        cfg = db.query(DomainRenew).filter(
+            DomainRenew.subdomain_id == req.subdomain_id,
+            DomainRenew.account_id == acc.id
+        ).first()
         if cfg:
             cfg.last_renewed_at = datetime.datetime.now()
             db.commit()

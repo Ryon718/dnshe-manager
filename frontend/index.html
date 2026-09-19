@@ -13,12 +13,13 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background:#f1f5f9; font-size:15px; color:#1e293b;
     }
-    .layout { display:flex; min-height:100vh; }
+    .layout { display:flex; min-height:100vh; height:100vh; overflow:hidden; }
 
     /* 侧边栏 */
     .sidebar {
       width:260px; background:#0f172a; color:#cbd5e1;
       display:flex; flex-direction:column; flex-shrink:0;
+      height:100vh; overflow-y:auto;
     }
     .sidebar .logo {
       padding:28px 24px; font-size:22px; font-weight:600; color:#fff;
@@ -38,7 +39,7 @@
     .menu-item .icon { font-size:22px; width:28px; text-align:center; }
 
     /* 主内容 */
-    .main { flex:1; padding:36px; }
+    .main { flex:1; padding:36px; height:100vh; overflow-y:auto; }
     .page-title { font-size:28px; font-weight:600; margin-bottom:28px; color:#0f172a; }
 
     /* 登录页 */
@@ -131,6 +132,12 @@
     <!-- 侧边栏 -->
     <div class="sidebar">
       <div class="logo">DNSHE Manager</div>
+      <div style="padding:16px 24px; border-bottom:1px solid #1e293b">
+        <label style="font-size:13px; color:#94a3b8; display:block; margin-bottom:8px">当前账号</label>
+        <select v-model="currentAccount" @change="switchAccount" style="width:100%; padding:8px; background:#1e293b; color:#fff; border:1px solid #334155; border-radius:6px">
+          <option v-for="acc in accountList" :value="acc.id">{{ acc.name }}</option>
+        </select>
+      </div>
       <div class="menu">
         <div class="menu-item" :class="{active: page==='dashboard'}" @click="handleMenuSelect('dashboard')">
           <span class="icon">📊</span> 仪表盘
@@ -150,6 +157,10 @@
         <div class="menu-item" :class="{active: page==='setting'}" @click="handleMenuSelect('setting')">
           <span class="icon">⚙️</span> 设置
         </div>
+      </div>
+      <div style="padding:20px 24px; border-top:1px solid #1e293b; font-size:13px; color:#64748b">
+        <div style="margin-bottom:8px">v1.2</div>
+        <a href="https://github.com/Ryon718/dnshe-manager" target="_blank" style="color:#38bdf8; text-decoration:none">⭐ GitHub 项目地址</a>
       </div>
     </div>
 
@@ -513,6 +524,20 @@
       <div v-if="page==='notify'">
         <div class="page-title">通知设置</div>
         <div class="card">
+          <h4>通知总开关</h4>
+          <div style="display:flex; align-items:center; gap:16px; margin-bottom:24px">
+            <label style="display:flex; align-items:center; gap:8px; font-size:16px; cursor:pointer">
+              <input type="checkbox" v-model="notifyConfig.enabled" style="width:18px; height:18px">
+              开启通知推送
+            </label>
+          </div>
+          <div class="form-item" style="margin-bottom:24px">
+            <label>到期提醒提前天数</label>
+            <input type="number" v-model.number="notifyConfig.expire_days" min="1" max="365" style="width:200px" placeholder="例如：30">
+            <div style="font-size:13px; color:#64748b; margin-top:6px">
+              域名剩余到期天数小于该值时，每天自动推送提醒（默认30天）
+            </div>
+          </div>
           <h4>选择通知渠道</h4>
           <div class="form-row">
             <div class="form-item" style="width:300px">
@@ -532,7 +557,12 @@
           <div v-if="['dingtalk','wechat','feishu'].includes(notifyConfig.type)">
             <div class="form-item">
               <label>Webhook地址</label>
-              <input v-model="notifyConfig.webhook" placeholder="粘贴群机器人的Webhook地址" style="width:100%">
+              <div style="position:relative">
+                <input :type="showNotifyWebhook ? 'text' : 'password'" v-model="notifyConfig.webhook" placeholder="粘贴群机器人的Webhook地址" style="width:100%; padding-right:44px">
+                <span @click="showNotifyWebhook=!showNotifyWebhook" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:#94a3b8; font-size:18px">
+                  {{ showNotifyWebhook ? '🙈' : '👁' }}
+                </span>
+              </div>
             </div>
             <div style="font-size:13px; color:#64748b; margin-bottom:20px">
               操作方法：在群里添加一个自定义机器人，复制Webhook地址粘贴到这里即可
@@ -543,7 +573,12 @@
           <div v-if="notifyConfig.type === 'bark'">
             <div class="form-item">
               <label>Bark Key</label>
-              <input v-model="notifyConfig.bark_key" placeholder="复制Bark APP里你的Key" style="width:100%">
+              <div style="position:relative">
+                <input :type="showBarkKey ? 'text' : 'password'" v-model="notifyConfig.bark_key" placeholder="复制Bark APP里你的Key" style="width:100%; padding-right:44px">
+                <span @click="showBarkKey=!showBarkKey" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:#94a3b8; font-size:18px">
+                  {{ showBarkKey ? '🙈' : '👁' }}
+                </span>
+              </div>
             </div>
             <div style="font-size:13px; color:#64748b; margin-bottom:20px">
               App Store安装Bark APP，打开后复制你的Key粘贴进来
@@ -554,7 +589,12 @@
           <div v-if="notifyConfig.type === 'serverchan'">
             <div class="form-item">
               <label>SendKey (Server酱方糖)</label>
-              <input v-model="notifyConfig.serverchan_key" placeholder="粘贴你的SendKey" style="width:100%">
+              <div style="position:relative">
+                <input :type="showScKey ? 'text' : 'password'" v-model="notifyConfig.serverchan_key" placeholder="粘贴你的SendKey" style="width:100%; padding-right:44px">
+                <span @click="showScKey=!showScKey" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:#94a3b8; font-size:18px">
+                  {{ showScKey ? '🙈' : '👁' }}
+                </span>
+              </div>
             </div>
             <div style="font-size:13px; color:#64748b; margin-bottom:20px">
               访问 sct.ftqq.com 微信扫码登录，复制SendKey粘贴进来
@@ -568,11 +608,21 @@
             </div>
             <div class="form-item">
               <label>Bot Token</label>
-              <input v-model="notifyConfig.telegram_token" placeholder="从@BotFather创建Bot获取的Token" style="width:100%">
+              <div style="position:relative">
+                <input :type="showTgToken ? 'text' : 'password'" v-model="notifyConfig.telegram_token" placeholder="从@BotFather创建Bot获取的Token" style="width:100%; padding-right:44px">
+                <span @click="showTgToken=!showTgToken" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:#94a3b8; font-size:18px">
+                  {{ showTgToken ? '🙈' : '👁' }}
+                </span>
+              </div>
             </div>
             <div class="form-item">
               <label>Chat ID</label>
-              <input v-model="notifyConfig.telegram_chat_id" placeholder="你的Telegram Chat ID" style="width:100%">
+              <div style="position:relative">
+                <input :type="showTgChat ? 'text' : 'password'" v-model="notifyConfig.telegram_chat_id" placeholder="你的Telegram Chat ID" style="width:100%; padding-right:44px">
+                <span @click="showTgChat=!showTgChat" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:#94a3b8; font-size:18px">
+                  {{ showTgChat ? '🙈' : '👁' }}
+                </span>
+              </div>
             </div>
             <div class="form-item">
               <label>代理（可选）</label>
@@ -591,29 +641,35 @@
       <!-- 设置 -->
       <div v-if="page==='setting'">
         <div class="page-title">系统设置</div>
-        <div class="card" v-if="configValid">
-          <div style="display:flex; align-items:center; gap:16px; padding:20px; background:#f0fdf4; border-radius:12px; margin-bottom:24px">
-            <div style="width:48px; height:48px; background:#dcfce7; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px; color:#16a34a">✓</div>
-            <div>
-              <div style="font-size:18px; font-weight:600; color:#166534">API配置已验证成功</div>
-              <div style="color:#15803d; font-size:14px; margin-top:4px">当前API密钥工作正常，已连接到DNSHE服务</div>
+
+        <!-- 多账号管理 -->
+        <div class="card">
+          <h4>DNSHE账号管理</h4>
+          <div style="margin-bottom:24px">
+            <div v-for="acc in accountList" :key="acc.id" style="display:flex; align-items:center; padding:12px; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:8px">
+              <div style="flex:1; font-size:16px">
+                {{ acc.name }}
+                <span v-if="acc.is_active" style="color:#16a34a; font-size:13px; margin-left:8px">● 当前使用中</span>
+              </div>
+              <button class="btn btn-danger" style="padding:6px 12px; font-size:13px" @click="delAccount(acc.id)">删除</button>
             </div>
           </div>
-          <button class="btn" style="background:#f1f5f9" @click="configValid=false">重新编辑配置</button>
-          <button class="btn btn-danger" @click="openDeleteConfirm()" style="margin-left:12px">删除配置</button>
-        </div>
-
-        <div class="card" v-else>
-          <h4>API配置</h4>
-          <div class="form-item" style="margin-bottom:20px">
-            <label>DNSHE API Key (X-API-Key)</label>
-            <input type="password" v-model="config.api_key" placeholder="以 cfsd_ 开头" style="width:100%">
+          <div style="border-top:1px solid #e2e8f0; padding-top:20px">
+            <h4 style="font-size:16px; margin-bottom:16px">添加新账号</h4>
+            <div class="form-item" style="margin-bottom:12px">
+              <label>账号备注名</label>
+              <input v-model="accountForm.name" placeholder="比如：主号 / 小号 / 备用号" style="width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:8px">
+            </div>
+            <div class="form-item" style="margin-bottom:12px">
+              <label>API Key</label>
+              <input v-model="accountForm.api_key" placeholder="以 cfsd_ 开头" style="width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:8px">
+            </div>
+            <div class="form-item" style="margin-bottom:20px">
+              <label>API Secret</label>
+              <input type="password" v-model="accountForm.api_secret" placeholder="API Secret" style="width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:8px">
+            </div>
+            <button class="btn btn-primary" @click="addAccount">验证并添加</button>
           </div>
-          <div class="form-item" style="margin-bottom:24px">
-            <label>DNSHE API Secret (X-API-Secret)</label>
-            <input type="password" v-model="config.api_secret" placeholder="API Secret" style="width:100%">
-          </div>
-          <button class="btn btn-primary" @click="saveConfig">保存并验证</button>
         </div>
 
         <!-- 安全设置 -->
@@ -638,24 +694,6 @@
             </div>
           </div>
         </div>
-
-        <!-- 删除确认弹窗 -->
-        <el-dialog v-model="showDeleteConfirm" title="删除API配置" width="500px">
-          <div style="margin-bottom:16px; color:#dc2626; font-size:15px">
-            确认要删除当前API配置吗？删除后将无法访问域名和解析管理功能。
-          </div>
-          <div style="margin-bottom:16px">
-            <label style="display:block; margin-bottom:8px; color:#334155">
-              请输入验证码 <b style="color:#2563eb; font-size:18px">{{ deleteCaptcha }}</b> 以确认删除：
-            </label>
-            <input v-model="deleteInput" placeholder="请输入上方验证码" style="width:100%; padding:10px; border:1px solid #e2e8f0; border-radius:8px">
-          </div>
-          <template #footer>
-            <button class="btn" style="background:#f1f5f9" @click="showDeleteConfirm=false">取消</button>
-            <button class="btn btn-danger" @click="doDeleteConfig" :disabled="deleteInput !== deleteCaptcha">确认删除</button>
-          </template>
-        </el-dialog>
-      </div>
 
       <!-- 全局修改密码弹窗（任意页面可用） -->
       <el-dialog v-model="changePwdDialog" title="修改登录密码" width="500px">
@@ -715,7 +753,11 @@ const app = createApp({
         localStorage.setItem("token", res.data.token)
         isLogin.value = true
         ElMessage.success("登录成功")
-        loadDomains()
+        // 先加载账号列表，拿到当前账号后再加载其他数据
+        await loadAccounts()
+        await loadDomains()
+        await loadRenewList()
+        await loadLogList()
       }else{
         ElMessage.error(res.data.message)
       }
@@ -756,6 +798,48 @@ const app = createApp({
     }
 
     const page = ref("dashboard")
+    const accountList = ref([])
+    const currentAccount = ref(null)
+    const accountForm = reactive({name:"", api_key:"", api_secret:""})
+    async function loadAccounts(){
+      const res = await axios.get("/api/account/list")
+      if(res.data.success){
+        accountList.value = res.data.accounts
+        const active = res.data.accounts.find(a => a.is_active)
+        if(active) currentAccount.value = active.id
+      }
+    }
+
+    async function switchAccount(){
+      await axios.post(`/api/account/switch/${currentAccount.value}`)
+      ElMessage.success("切换账号成功")
+      await loadDomains()
+      await loadRenewList()
+      await loadLogList()
+    }
+
+    async function addAccount(){
+      const res = await axios.post("/api/account/add", accountForm)
+      if(res.data.success){
+        ElMessage.success("账号添加成功")
+        accountForm.name = accountForm.api_key = accountForm.api_secret = ""
+        loadAccounts()
+      }else{
+        ElMessage.error(res.data.message)
+      }
+    }
+
+    async function delAccount(id){
+      const res = await axios.delete(`/api/account/delete/${id}`)
+      if(res.data.success){
+        ElMessage.success("账号已删除")
+        await loadAccounts()
+        await loadDomains()
+      }else{
+        ElMessage.error(res.data.message)
+      }
+    }
+
     const domainList = ref([])
     const recordList = ref([])
     const renewList = ref([])
@@ -767,8 +851,15 @@ const app = createApp({
       serverchan_key: "",
       telegram_token: "",
       telegram_chat_id: "",
-      telegram_proxy: ""
+      telegram_proxy: "",
+      enabled: true,
+      expire_days: 30
     })
+    const showNotifyWebhook = ref(false)
+    const showBarkKey = ref(false)
+    const showScKey = ref(false)
+    const showTgToken = ref(false)
+    const showTgChat = ref(false)
     const selectedDomainId = ref(null)
     const selectedDomainFull = ref("")
     const currentDomain = ref({})
@@ -1131,6 +1222,8 @@ const app = createApp({
         notifyConfig.telegram_token = res.data.data.telegram_token || ""
         notifyConfig.telegram_chat_id = res.data.data.telegram_chat_id || ""
         notifyConfig.telegram_proxy = res.data.data.telegram_proxy || ""
+        notifyConfig.enabled = res.data.data.notify_enabled !== false
+        notifyConfig.expire_days = res.data.data.notify_expire_days || 30
       }
     }
 
@@ -1154,10 +1247,12 @@ const app = createApp({
       }
     }
 
-    onMounted(()=>{
+    onMounted(async ()=>{
       // 只有已登录才加载数据，登录页不发任何请求
       if(localStorage.getItem("token")){
-        loadDomains()
+        await loadAccounts()
+        await loadDomains()
+        await loadRenewList()
       }
     })
 
@@ -1168,7 +1263,9 @@ const app = createApp({
       openEdit, editDialog, editRec, saveEdit, delRec, formatHost, onDomainChange, goBackDomain, saveNs,
       config, configValid, showDeleteConfirm, deleteCaptcha, deleteInput, saveConfig, openDeleteConfirm, doDeleteConfig, renewList, loadRenewList, toggleRenew, testRenewNow, logList, loadLogList, notifyConfig, loadNotifyConfig, saveNotify, testNotify, loadConfig, loadDomains, goRecord,
       isLogin, loginForm, changePwdDialog, pwdForm, doLogin, doLogout, doChangePwd,
-      usernameForm, doChangeUsername
+      usernameForm, doChangeUsername,
+      accountList, currentAccount, accountForm, loadAccounts, switchAccount, addAccount, delAccount,
+      showNotifyWebhook, showBarkKey, showScKey, showTgToken, showTgChat
     }
   }
 })

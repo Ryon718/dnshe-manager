@@ -8,10 +8,19 @@ class AppConfig(Base):
     key = Column(String, unique=True, index=True)
     value = Column(String)
 
+class DnsheAccount(Base):
+    __tablename__ = "dnshe_account"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True)
+    api_key = Column(String)
+    api_secret = Column(String)
+    is_active = Column(Integer, default=1)  # 1=当前使用的账号
+
 class DomainRenew(Base):
     __tablename__ = "domain_renew"
     id = Column(Integer, primary_key=True, index=True)
-    subdomain_id = Column(Integer, unique=True, index=True)
+    account_id = Column(Integer, index=True)
+    subdomain_id = Column(Integer, index=True)
     auto_renew = Column(Boolean, default=False)
     last_renewed_at = Column(DateTime, nullable=True)
 

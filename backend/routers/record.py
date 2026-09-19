@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.dnshe_api import DnsheClient
-from backend.models import AppConfig
+from backend.models import DnsheAccount
 from backend.scheduler import log_op
 
 router = APIRouter()
@@ -26,11 +26,10 @@ class RecDelReq(BaseModel):
     id: int
 
 def get_client(db: Session):
-    key_row = db.query(AppConfig).filter(AppConfig.key == "dnshe_api_key").first()
-    secret_row = db.query(AppConfig).filter(AppConfig.key == "dnshe_api_secret").first()
-    if not key_row or not secret_row or not key_row.value or not secret_row.value:
+    account = db.query(DnsheAccount).filter(DnsheAccount.is_active == 1).first()
+    if not account:
         return None
-    return DnsheClient(key_row.value, secret_row.value)
+    return DnsheClient(account.api_key, account.api_secret)
 
 @router.get("/list")
 def list_record(subdomain_id: int, db: Session = Depends(get_db)):

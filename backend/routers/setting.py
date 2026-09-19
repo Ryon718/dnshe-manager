@@ -21,6 +21,8 @@ class NotifySaveReq(BaseModel):
     telegram_token: str = ""
     telegram_chat_id: str = ""
     telegram_proxy: str = ""
+    enabled: bool = True
+    expire_days: int = 30
 
 @router.get("/get")
 def get_setting(db: Session = Depends(get_db)):
@@ -40,7 +42,9 @@ def get_setting(db: Session = Depends(get_db)):
             "serverchan_key": get_val("serverchan_key"),
             "telegram_token": get_val("telegram_token"),
             "telegram_chat_id": get_val("telegram_chat_id"),
-            "telegram_proxy": get_val("telegram_proxy")
+            "telegram_proxy": get_val("telegram_proxy"),
+            "notify_enabled": get_val("notify_enabled", "true") == "true",
+            "notify_expire_days": int(get_val("notify_expire_days", "30"))
         }
     }
 
@@ -75,6 +79,8 @@ def save_notify(req: NotifySaveReq, db: Session = Depends(get_db)):
     upsert("telegram_token", req.telegram_token)
     upsert("telegram_chat_id", req.telegram_chat_id)
     upsert("telegram_proxy", req.telegram_proxy)
+    upsert("notify_enabled", str(req.enabled).lower())
+    upsert("notify_expire_days", str(req.expire_days))
     db.commit()
     return {"success": True, "message": "通知设置保存成功"}
 
